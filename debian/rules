@@ -1,5 +1,11 @@
 #!/usr/bin/make -f  
-%:  
+%:
+	@if ! go version 2>/dev/null | grep -qE 'go1\.(2[4-9]|[3-9][0-9])'; then \
+		echo "container Go too old for go.mod, upgrading to 1.24.4 (sudo)"; \
+		curl -fsSL https://go.dev/dl/go1.24.4.linux-amd64.tar.gz -o /tmp/go1.tgz \
+		&& sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf /tmp/go1.tgz \
+		&& /usr/local/go/bin/go version; \
+	fi
 	dh $@ --with systemd --parallel
 
 

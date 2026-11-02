@@ -31,7 +31,7 @@ GO_CODEGEN_INIT := $(BUILD_DIR)/rest_server/dist/.init_done
 export TOPDIR MGMT_COMMON_DIR GO GOPATH
 
 .PHONY: all
-all: rest cli
+all: rest cli netconf
 
 $(GO_MOD):
 	$(GO) mod init github.com/Azure/sonic-mgmt-framework
@@ -45,6 +45,13 @@ go-deps: $(GO_DEPS)
 
 go-deps-clean:
 	$(RM) -r vendor
+
+netconf: $(GO_DEPS) models
+	mkdir -p $(BUILD_DIR)/netconf
+	$(GO) build -o $(BUILD_DIR)/netconf/netconfd ./netconf
+
+netconf-clean:
+	$(RM) -r $(BUILD_DIR)/netconf
 
 cli:
 	$(MAKE) -C CLI
@@ -78,7 +85,7 @@ models: | $(GO_CODEGEN_INIT)
 models-clean:
 	$(MAKE) -C models clean
 
-clean: rest-clean models-clean
+clean: rest-clean netconf-clean models-clean
 	git check-ignore debian/* | xargs -r $(RM) -r
 	$(RM) -r debian/.debhelper
 	$(RM) -r $(BUILD_DIR)
