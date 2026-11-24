@@ -100,7 +100,7 @@ class Handlers:
         xport_config = {}
         xport_flags = []
 
-        re_ip = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
+        re_ip = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
         addr_key = iter(["source-address", "destination-address"])
         arg_list = list(args)
 
