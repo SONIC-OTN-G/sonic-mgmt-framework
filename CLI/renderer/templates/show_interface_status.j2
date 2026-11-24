@@ -1,7 +1,7 @@
 {% set vars = {'name': ""} %}
 {% set vars = {'admin_state': ""} %}
 {% set vars = {'oper_state': ""} %}
-{% set vars = {'description': ""} %}
+{% set vars = {'description': "-"} %}
 {% set vars = {'mtu': ""} %}
 {% set vars = {'speed': ""} %}
 {% if json_output -%}
@@ -12,18 +12,26 @@
 {% set interface_list = json_output[key_json]["interface"] %}
 {% for interface in interface_list %}
     {% for key in interface %}
+      {#- Keys may be absent in config-only responses: the ethernet container
+          can lack its [state] sub-block and the state block may hold only
+          "name". Read via dict.get() so a missing field renders blank instead
+          of raising UndefinedError (chained [] through a missing key raises
+          before |default can catch it). Description lives in the [config] block. #}
+      {% if "config" in key and interface[key].get("description") is not none %}
+        {% if vars.update({'description':interface[key]["description"]}) %}{% endif %}
+      {% endif %}
       {% if "ethernet" in key %}
-        {% if vars.update({'speed':interface[key]["state"]["port-speed"]|replace("openconfig-if-ethernet:SPEED_", "")}) %}{% endif %}
+        {#- Speed: prefer operational state/port-speed; fall back to
+            config/port-speed for config-only responses (no hw oper state). #}
+        {% if vars.update({'speed':(interface[key].get("state", {}).get("port-speed") or interface[key].get("config", {}).get("port-speed", ""))|replace("openconfig-if-ethernet:SPEED_", "")}) %}{% endif %}
       {% endif %}
       {% if "state" in key %}
-        {% if vars.update({'name':interface[key]["name"]}) %}{% endif %}
-        {% if vars.update({'admin_state':interface[key]["admin-status"]}) %}{% endif %}
-        {% if vars.update({'oper_state':interface[key]["oper-status"]}) %}{% endif %}
-        {% if vars.update({'mtu':interface[key]["mtu"]}) %}{% endif %}
-        {% if interface[key]["description"] != "" %}
+        {% if vars.update({'name':interface[key].get("name", "")}) %}{% endif %}
+        {% if vars.update({'admin_state':interface[key].get("admin-status", "")}) %}{% endif %}
+        {% if vars.update({'oper_state':interface[key].get("oper-status", "")}) %}{% endif %}
+        {% if vars.update({'mtu':interface[key].get("mtu", "")}) %}{% endif %}
+        {% if interface[key].get("description", "") != "" %}
         {% if vars.update({'description':interface[key]["description"]}) %}{% endif %}
-        {%else %}
-        {% if vars.update({'description':"-"}) %}{% endif %}
         {% endif %}
       {% endif %}
     {% endfor %}
